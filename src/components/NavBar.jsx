@@ -73,6 +73,10 @@ export default function Navbar() {
             <FaAward className="text-lg" />
             <span>View Tier</span>
           </Link> 
+          <Link to="/scan-claim" className="flex items-center gap-1 hover:text-yellow-300 transition">
+            <FaAward className="text-lg" />
+            <span>Scan QR</span>
+          </Link> 
           <button
             onClick={logout}
             className="p-2 rounded-full hover:bg-white/20 transition-all"
