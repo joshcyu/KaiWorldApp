@@ -13,9 +13,9 @@ import ScanClaim from './pages/ScanClaim';
 
 function App() {
   return (
-    <HashRouter>
+    <BrowserRouter>
       <AppWithNavbar />
-    </HashRouter>
+    </BrowserRouter>
   );
 }
 
