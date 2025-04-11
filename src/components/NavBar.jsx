@@ -175,6 +175,16 @@ export default function Navbar() {
                     </Link>
                   </li>
                   <li>
+                    <Link
+                      to="/scan-claim"
+                      onClick={closeSidebar}
+                      className="flex items-center gap-3 py-2 px-4 rounded-lg text-xl font-semibold transition-all hover:bg-yellow-300 hover:text-black"
+                    >
+                      <FaAward className="text-lg" />
+                      Scan QR
+                    </Link>
+                  </li>
+                  <li>
                     <button
                       onClick={() => {
                         closeSidebar();
