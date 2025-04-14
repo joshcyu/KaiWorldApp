@@ -12,6 +12,8 @@ export default function Login() {
   const [errorMessage, setErrorMessage] = useState(''); // Error message
   const navigate = useNavigate();
 
+
+
   const handleLogin = async () => {
     try {
       const res = await api.post('/auth/login', { username, password });
@@ -32,7 +34,7 @@ export default function Login() {
 
       // Hide error overlay after 3 seconds
       setTimeout(() => setShowError(false), 3000);
-  
+
     }
   };
 

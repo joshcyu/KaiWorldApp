@@ -3,11 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api';
 import { FaCoins } from 'react-icons/fa';
 import { FiLogOut } from 'react-icons/fi';
-import FoodTabs from './FoodTabs'; // Import the FoodTabs component
+import FoodTabs from './ActivtyCatalog';
 import api1 from '../api1';
 import { motion, AnimatePresence } from 'framer-motion';
-import UserTierModal from '../components/UserTierModal'; // Import tier modal if needed
+import UserTierModal from '../components/UserTierModal';
 import { QRCodeCanvas } from 'qrcode.react';
+// Import Socket.IO client
+import { io } from 'socket.io-client';
+import { MdInfoOutline } from 'react-icons/md'; // Info icon
+
+// Initialize socket connection with your server URL (adjust as needed)
+const socket = io('https://10.10.10.61:5000', { secure: true, rejectUnauthorized: false });
 
 export default function ClaimCoins() {
   const [terminalId, setTerminalId] = useState('');
@@ -23,19 +29,21 @@ export default function ClaimCoins() {
   const [congratsSilver, setCongratsSilver] = useState(null);
   const [congratsGold, setCongratsGold] = useState(null);
   const [showQR, setShowQR] = useState(false); // Controls QR Code modal
+  const [showInfo, setShowInfo] = useState(false); // Controls Info modal
 
   const user = JSON.parse(localStorage.getItem('user'));
   const userId = user?.UserId;
   const navigate = useNavigate();
   const timeoutRef = useRef(null);
 
-  // If user is not logged in, redirect to auth page
+  // Ensure user is logged in; if not, redirect.
   useEffect(() => {
-    const stored = localStorage.getItem('user');
-    if (!stored) navigate('/auth');
+    if (!localStorage.getItem('user')) {
+      navigate('/auth');
+    }
   }, [navigate]);
 
-  // Fetch user points and congrats flags
+  // Fetch user details (points and congratulation flags)
   useEffect(() => {
     const fetchCoins = async () => {
       try {
@@ -50,11 +58,11 @@ export default function ClaimCoins() {
     if (userId) fetchCoins();
   }, [userId]);
 
-  // Fetch outlets
+  // Fetch outlets list
   useEffect(() => {
     const fetchOutlets = async () => {
       try {
-        const res = await api1.get('/food/getOutlets');
+        const res = await api1.get('/catalog/getFoodOutlets');
         setOutlets(res.data);
       } catch (err) {
         console.error('Error fetching outlets:', err);
@@ -89,7 +97,7 @@ export default function ClaimCoins() {
     }
   }, [user]);
 
-  // Instead of immediately claiming, show the QR code modal
+  // When Claim Coins is clicked, check that Terminal and SI No are provided and claimable.
   const handleClaim = () => {
     if (isClaiming) return;
     if (!terminalId || !posNo) {
@@ -98,63 +106,35 @@ export default function ClaimCoins() {
       setShowModal(true);
       return;
     }
-    // Show the QR Code modal
+    // Optionally, you can add additional checks here (e.g., verifying claimable coins)
+    // If everything is okay, display the QR code modal.
     setShowQR(true);
   };
 
-  // Polling for claim status once the QR code modal is closed and claim is pending
+  // SOCKET.IO REAL-TIME UPDATE: Listen for claimSuccess events.
   useEffect(() => {
-    let interval;
-    if (!showQR && !isClaiming && terminalId && posNo) {
-      // Poll every 3 seconds
-      interval = setInterval(async () => {
-        try {
-          const res = await api.get(`/reward/claimStatus?terminalId=${terminalId}&posNo=${posNo}`);
-          if (res.data.claimed) {
-            setModalMessage('Claim confirmed! You have earned Kai Coins.');
-            setClaimSuccess(true);
-            setShowModal(true);
-            clearInterval(interval);
-            setTimeout(() => window.location.reload(), 3000);
-          }
-        } catch (err) {
-          console.error('Error checking claim status:', err);
-        }
-      }, 3000);
-    }
-    return () => clearInterval(interval);
-  }, [showQR, terminalId, posNo, isClaiming]);
-
-  // Confirm claim after supervisor scans the QR code
-  const confirmClaim = async () => {
-    setIsClaiming(true);
-    try {
-      const res = await api.post('/reward/claim', {
-        terminalId,
-        posNo,
-        userId,
-      });
-      setModalMessage(res.data.message);
-      setClaimSuccess(res.data.message.includes('Kai Coins'));
-      setShowModal(true);
-      setShowQR(false);
-      if (res.data.message.includes('Kai Coins')) {
+    // Listen for the "claimSuccess" event from the server
+    socket.on('claimSuccess', (data) => {
+      // Check that the event corresponds to the same claim (if needed)
+      if (data.terminalId === terminalId && data.posNo === posNo) {
+        setModalMessage(data.message);
+        setClaimSuccess(true);
+        setShowModal(true);
+        // Update local storage if needed
+        // Optionally refresh after a short delay
         setTimeout(() => window.location.reload(), 3000);
-      } else {
-        setIsClaiming(false);
       }
-    } catch (err) {
-      setModalMessage('Claim failed');
-      setClaimSuccess(false);
-      setShowModal(true);
-      setIsClaiming(false);
-    }
-  };
+    });
+    
+    return () => {
+      socket.off('claimSuccess');
+    };
+  }, [terminalId, posNo]);
 
-  // QR code data: you might wish to include a token or encrypted details in production
+  // QR code data: might include additional details or tokens.
   const qrValue = JSON.stringify({ terminalId, posNo, userId });
 
-  // Update tier status if thresholds are reached.
+  // Update tier status if applicable.
   const updateCongratulatedStatus = async (isCongratulatedSilver, isCongratulatedGold) => {
     try {
       await api.post('/reward/updateCongratulationStatus', {
@@ -182,9 +162,19 @@ export default function ClaimCoins() {
     <div className="relative min-h-screen bg-gradient-to-br from-violet-500 via-pink-500 to-yellow-300 text-gray-900">
       <main className="flex flex-col justify-center items-center px-4 py-10">
         <div className="w-full max-w-md bg-white/30 backdrop-blur-lg border border-white/40 p-8 rounded-2xl shadow-2xl mt-8">
-          <h2 className="text-2xl font-bold text-center text-purple-100 mb-6">
-            Claim Your Kai Coins 🪙
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-purple-100 mb-6">
+              Claim Your Kai Coins 🪙
+            </h2>
+            {/* Info Icon */}
+            <button
+              onClick={() => setShowInfo(true)}
+              className="p-2 rounded-full bg-white/20 hover:bg-white/40 transition"
+              title="How does it work?"
+            >
+              <MdInfoOutline className="text-2xl text-purple-100" />
+            </button>
+          </div>
 
           {/* Terminal Selection */}
           <div className="mb-4">
@@ -226,6 +216,47 @@ export default function ClaimCoins() {
         </div>
       </main>
 
+      {/* Info Modal */}
+      <AnimatePresence>
+        {showInfo && (
+          <motion.div
+            className="fixed inset-0 bg-black/50 flex justify-center items-center z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="bg-white rounded-xl p-6 shadow-xl text-center relative max-w-sm w-full"
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.8 }}
+            >
+              <h3 className="text-2xl font-bold text-purple-700 mb-4">
+                Reward Conversion Info
+              </h3>
+              <p className="mb-4 text-gray-800 text-left">
+                <strong>Minimum purchase:</strong> ₱100<br />
+                <strong>Reward rate:</strong> 10 Kai Coins for every ₱100 of purchase.
+                <br /><br />
+                For example:
+                <br></br> 
+                A purchase of ₱100 earns you 10 Kai Coins
+                <br></br> 
+                A purchase of ₱250 earns you 20 Kai Coins (the excess is ignored).
+                <br /><br />
+                Please note: Only claim if your purchase qualifies.
+              </p>
+              <button
+                onClick={() => setShowInfo(false)}
+                className="mt-6 bg-gradient-to-r from-purple-600 to-pink-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition-transform"
+              >
+                Close
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* QR Code Modal */}
       <AnimatePresence>
         {showQR && (
@@ -244,18 +275,16 @@ export default function ClaimCoins() {
               <h3 className="text-xl font-bold mb-4 text-purple-100">
                 Scan this QR Code with a Supervisor
               </h3>
-              <div className="mx-auto mb-4">
+              <div className="mx-auto mb-4 ml-16">
                 <QRCodeCanvas value={qrValue} size={150} bgColor="#ffffff" fgColor="#000000" level="H" />
               </div>
               <p className="mb-4 text-gray-700">
-                Once scanned, the claim will be processed automatically.
+                Waiting for supervisor to scan and confirm claim...
               </p>
-              <button
-                onClick={confirmClaim}
-                className="w-full py-2 rounded-xl font-semibold bg-gradient-to-r from-purple-600 to-pink-500 text-white hover:scale-105 transition-transform"
-              >
-                Confirm Claim
-              </button>
+              <button className='p-2 border-none text-white bg-violet-500 rounded-lg'
+              onClick = {() => setShowQR(false)}>
+              Cancel
+            </button>
             </motion.div>
           </motion.div>
         )}
@@ -271,7 +300,7 @@ export default function ClaimCoins() {
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="bg-white/40 backdrop-blur-lg border border-white/40 rounded-xl p-6 shadow-xl text-center relative max-w-sm w-full"
+              className="bg-white/30 backdrop-blur-lg border border-white/40 rounded-xl p-6 shadow-xl text-center relative max-w-sm w-full"
               initial={{ scale: 0.8 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.8 }}

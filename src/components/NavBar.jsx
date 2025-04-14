@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaCoins, FaHome, FaAward } from 'react-icons/fa';
+import { FaCoins, FaHome, FaAward, FaApple } from 'react-icons/fa';
 import { FiLogOut } from 'react-icons/fi';
 import { AiOutlineMenu, AiOutlineClose } from 'react-icons/ai';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -50,7 +50,7 @@ export default function Navbar() {
       <header className="hidden md:flex items-center justify-between px-8 py-4 bg-gradient-to-r from-purple-600 via-pink-500 to-yellow-400 text-white shadow-lg rounded-b-2xl transition-all">
         <div className="flex items-center gap-3">
           <FaHome className="text-2xl" />
-          <span className="text-xl font-bold">Kai Mall</span>
+          <span className="text-xl font-bold">kai mall</span>
         </div>
         <div className="flex items-center gap-6 text-lg">
           <div className="flex items-center gap-1">
@@ -59,11 +59,15 @@ export default function Navbar() {
           </div>
           <Link to="/claim" className="flex items-center gap-1 hover:text-yellow-300 transition">
             <FaCoins className="text-lg" />
-            <span>Claim Coins</span>
+            <span>Claim Kai Coins</span>
           </Link>
-          <Link to="/food" className="flex items-center gap-1 hover:text-yellow-300 transition">
+          <Link to="/activity" className="flex items-center gap-1 hover:text-yellow-300 transition">
             <FaAward className="text-lg" />
             <span>View Redeemables</span>
+          </Link>
+          <Link to="/viewfoods" className="flex items-center gap-1 hover:text-yellow-300 transition">
+            <FaApple className="text-lg" />
+            <span>View Food Catalog</span>
           </Link>
           <Link to="/view-redeemed-items" className="flex items-center gap-1 hover:text-yellow-300 transition">
             <FaAward className="text-lg" />
@@ -72,10 +76,9 @@ export default function Navbar() {
           <Link to="/tier-progress" className="flex items-center gap-1 hover:text-yellow-300 transition">
             <FaAward className="text-lg" />
             <span>View Tier</span>
-          </Link> 
-          <Link to="/scan-claim" className="flex items-center gap-1 hover:text-yellow-300 transition">
+          </Link> <Link to="/scan-claim" className="flex items-center gap-1 hover:text-yellow-300 transition">
             <FaAward className="text-lg" />
-            <span>Scan QR</span>
+            <span>Scan</span>
           </Link> 
           <button
             onClick={logout}
@@ -94,8 +97,8 @@ export default function Navbar() {
             <span className="text-lg font-bold">Hi {user.Name}</span>
           </div>
           <div className='flex gap-2 items-center'>
+            <span className="text-lg font-bold"><span className='text-sm'>Kai Coins:</span> {user.CoinsEarned}</span>
             <FaCoins className="text-yellow-300 animate-bounce" />
-            <span className="text-lg font-bold"> Coins: {user.CoinsEarned}</span>
           </div>
         <button
           onClick={toggleSidebar}
@@ -126,7 +129,7 @@ export default function Navbar() {
               <div className="flex justify-between items-center mb-8">
                 <div className="flex items-center gap-2">
                   <FaHome className="text-2xl" />
-                  <span className="text-xl font-bold">Kai Mall</span>
+                  <span className="text-xl font-bold">kai mall</span>
                 </div>
                 <button onClick={toggleSidebar}>
                   <AiOutlineClose className="text-2xl text-white" />
@@ -141,17 +144,27 @@ export default function Navbar() {
                       className="flex items-center gap-3 py-2 px-4 rounded-lg text-xl font-semibold transition-all hover:bg-yellow-300 hover:text-black"
                     >
                       <FaCoins className="text-lg" />
-                      Claim Coins
+                      Claim Kai Coins
                     </Link>
                   </li>
                   <li>
                     <Link
-                      to="/food"
+                      to="/activity"
                       onClick={closeSidebar}
                       className="flex items-center gap-3 py-2 px-4 rounded-lg text-xl font-semibold transition-all hover:bg-yellow-300 hover:text-black"
                     >
                       <FaAward className="text-lg" />
                       View Redeemables
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/viewfoods"
+                      onClick={closeSidebar}
+                      className="flex items-center gap-3 py-2 px-4 rounded-lg text-xl font-semibold transition-all hover:bg-yellow-300 hover:text-black"
+                    >
+                      <FaAward className="text-lg" />
+                        View Food Catalog
                     </Link>
                   </li>
                   <li>
@@ -181,7 +194,7 @@ export default function Navbar() {
                       className="flex items-center gap-3 py-2 px-4 rounded-lg text-xl font-semibold transition-all hover:bg-yellow-300 hover:text-black"
                     >
                       <FaAward className="text-lg" />
-                      Scan QR
+                      Scan
                     </Link>
                   </li>
                   <li>

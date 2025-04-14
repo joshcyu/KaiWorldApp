@@ -21,7 +21,8 @@ export default function ScanClaim() {
       html5QrCodeScanner.clear();
       try {
         const claimData = JSON.parse(decodedText);
-        const res = await api.post('/reward/claim', claimData);
+/*         const res = await api.post('/reward/claim', claimData); */
+        const res = await api.post('/reward/scanClaim', claimData);
         // You can display a modal or use a toast instead of alert:
         alert(res.data.message); 
         navigate('/claim');
