@@ -22,7 +22,7 @@ export default function ScanClaim() {
       try {
         const claimData = JSON.parse(decodedText);
 /*         const res = await api.post('/reward/claim', claimData); */
-        const res = await api.post('/reward/scanClaim', claimData);
+        const res = await api.post('/reward-control/scanClaim', claimData);
         // You can display a modal or use a toast instead of alert:
         alert(res.data.message); 
         navigate('/claim');
