@@ -1,178 +1,194 @@
 // src/pages/AuthCard.jsx
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../api';
-import { FaUserPlus } from 'react-icons/fa';
-import { MdLogin, MdInfoOutline } from 'react-icons/md';
-import '../assets/authcard.css'; // Contains your flip animation styles
 import { motion, AnimatePresence } from 'framer-motion';
+import { FaHeart, FaUserPlus } from 'react-icons/fa';
+import { MdLogin } from 'react-icons/md';
+import { GiBearFace } from 'react-icons/gi';
+import '../assets/authcard.css'; // Ensure your flip card CSS is updated with custom styles
 
 export default function AuthCard() {
-  const [isFlipped, setIsFlipped] = useState(false);
-  const [loginData, setLoginData] = useState({ username: '', password: '' });
-  const [registerData, setRegisterData] = useState({ name: '', username: '', password: '' });
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [showError, setShowError] = useState(false);
-  const [modalMessage, setModalMessage] = useState('');
+  // cardStep:
+  // 0 = initial "Click Me" card,
+  // 1 = greeting message,
+  // 2 = date suggestion with interactive buttons,
+  // 3 = final love message.
+  const [cardStep, setCardStep] = useState(0);
   const navigate = useNavigate();
 
-  // When this component mounts, remove any stored user data.
   useEffect(() => {
+    // Remove any stored user data when component mounts.
     localStorage.removeItem('user');
   }, []);
 
-  const handleLogin = async () => {
-    try {
-      const res = await api.post('/auth/login', loginData);
-      localStorage.setItem('user', JSON.stringify(res.data.user));
-      setModalMessage('Login Successful! Redirecting...');
-      setShowSuccess(true);
-      setTimeout(() => navigate('/claim'), 2000);
-    } catch (err) {
-      setModalMessage(err.response?.data?.message || 'Login failed');
-      setShowError(true);
-      setTimeout(() => setShowError(false), 3000);
-    }
+  const handleNext = () => {
+    setCardStep((prev) => prev + 1);
   };
 
-  const handleRegister = async () => {
-    try {
-      await api.post('/auth/register', registerData);
-      // Instead of an alert, show a success modal.
-      setModalMessage('Registration Successful! Redirecting to login...');
-      setShowSuccess(true);
-      setTimeout(() => {
-        setIsFlipped(false);
-        setShowSuccess(false);
-      }, 2000);
-    } catch (err) {
-      setModalMessage(err.response?.data?.message || 'Registration failed');
-      setShowError(true);
-      setTimeout(() => setShowError(false), 3000);
-    }
+  const handleSureSure = () => {
+    setCardStep(3);
   };
+
+  // For the "No No" button, prevent click with a playful shake effect.
+  const handleNoNo = (e) => {
+    e.preventDefault();
+    // Optionally add a shake effect using Framer Motion controls or CSS animation.
+    alert("Bawal tumanggi. Date us!!!!");
+  };
+
+  // Variants for the card flip animation.
+  const cardVariants = {
+    initial: { rotateY: 180, opacity: 0 },
+    animate: { rotateY: 0, opacity: 1 },
+    exit: { rotateY: -180, opacity: 0 }
+  };
+
+  // Floating hearts as a background effect.
+  const FloatingHearts = () => (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      {[...Array(8)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="text-pink-300 text-3xl"
+          initial={{ opacity: 0, y: 0, x: `${Math.random() * 100}%` }}
+          animate={{
+            opacity: 1,
+            y: "-100vh",
+            rotate: [0, 360]
+          }}
+          transition={{
+            duration: 12 + Math.random() * 4,
+            repeat: Infinity,
+            delay: i * 0.3,
+            ease: "easeInOut"
+          }}
+        >
+          ❤️
+        </motion.div>
+      ))}
+    </div>
+  );
 
   return (
-    <div className="relative h-screen w-screen flex items-center justify-center bg-gradient-to-r from-purple-500 via-pink-500 to-yellow-500">
-      {/* Success Modal Overlay */}
-      <AnimatePresence>
-        {showSuccess && (
+    <div className="relative h-screen w-screen flex items-center justify-center bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 p-4 overflow-hidden">
+      <FloatingHearts />
+      <AnimatePresence exitBeforeEnter>
+        {cardStep === 0 && (
           <motion.div
-            className="absolute inset-0 bg-black/50 flex items-center justify-center z-20"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            key="step0"
+            className="auth-card p-8 bg-white bg-opacity-90 rounded-3xl shadow-2xl ring-4 ring-pink-200"
+            initial={cardVariants.initial}
+            animate={cardVariants.animate}
+            exit={cardVariants.exit}
+            transition={{ duration: 0.8 }}
           >
-            <motion.div
-              className="bg-white p-8 rounded-xl shadow-xl text-center"
-              initial={{ scale: 0.8 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.8 }}
-            >
-              <h2 className="text-2xl font-semibold text-purple-600">Success!</h2>
-              <p className="mt-2 text-gray-700">{modalMessage}</p>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Error Modal Overlay */}
-      <AnimatePresence>
-        {showError && (
-          <motion.div
-            className="absolute inset-0 bg-black/50 flex items-center justify-center z-20"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="bg-red-500 p-8 rounded-xl shadow-xl text-center"
-              initial={{ scale: 0.8 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.8 }}
-            >
-              <h2 className="text-2xl font-semibold text-white">Error</h2>
-              <p className="mt-2 text-white">{modalMessage}</p>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Flip Card Container */}
-      <div className="auth-card-container">
-        <div className={`auth-card ${isFlipped ? 'flipped' : ''}`}>
-          {/* Front Face - Login */}
-          <div className="auth-card-face auth-card-front">
-            <h2 className="text-3xl font-bold text-purple-700 mb-6">Kai Mall Login</h2>
-            <input
-              placeholder="Username"
-              value={loginData.username}
-              onChange={(e) => setLoginData({ ...loginData, username: e.target.value })}
-              className="w-full mb-4 px-4 py-2 rounded-xl border border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400 transition"
-            />
-            <input
-              placeholder="Password"
-              type="password"
-              value={loginData.password}
-              onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-              className="w-full mb-4 px-4 py-2 rounded-xl border border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400 transition"
-            />
-            <button
-              onClick={handleLogin}
-              className="w-full bg-gradient-to-r from-purple-600 to-pink-500 text-white py-2 rounded-xl mb-4 hover:scale-105 transition-transform"
-            >
-              Login
-            </button>
-            <p className="text-gray-700">Don't have an account?</p>
-            <button
-              onClick={() => setIsFlipped(true)}
-              className="mt-2 w-full bg-white border-2 border-purple-500 text-purple-700 py-2 rounded-xl hover:bg-purple-100 transition"
-            >
-              Create Account
-            </button>
-          </div>
-
-          {/* Back Face - Register */}
-          <div className="auth-card-face auth-card-back">
-            <h2 className="text-3xl font-bold text-purple-700 mb-6 flex items-center justify-center gap-2">
-              <FaUserPlus /> Register
+            <h2 className="text-3xl font-bold text-purple-700 mb-6 text-center">
+              Hi, Pearl Grace na napakaganda!!!
             </h2>
-            <input
-              placeholder="Full Name"
-              value={registerData.name}
-              onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
-              className="w-full mb-4 px-4 py-2 rounded-xl border border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400 transition"
-            />
-            <input
-              placeholder="Username"
-              value={registerData.username}
-              onChange={(e) => setRegisterData({ ...registerData, username: e.target.value })}
-              className="w-full mb-4 px-4 py-2 rounded-xl border border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400 transition"
-            />
-            <input
-              placeholder="Password"
-              type="password"
-              value={registerData.password}
-              onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
-              className="w-full mb-4 px-4 py-2 rounded-xl border border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400 transition"
-            />
-            <button
-              onClick={handleRegister}
-              className="w-full bg-gradient-to-r from-purple-600 to-pink-500 text-white py-2 rounded-xl mb-4 hover:scale-105 transition-transform"
+            <p className="text-lg text-gray-700 mb-8 text-center">
+              I just want to say sorry, sorry because I've been busy. I was not able to consider 'yung mararamdaman mo but let me bawi!
+            </p>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleNext}
+              className="w-full py-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl shadow-lg"
             >
-              Register
-            </button>
-            <p className="text-gray-700">Already have an account?</p>
-            <button
-              onClick={() => setIsFlipped(false)}
-              className="flex items-center justify-center gap-2 text-lg text-purple-700 hover:underline hover:text-purple-900 transition mt-4"
+              Click Me!
+            </motion.button>
+          </motion.div>
+        )}
+
+        {cardStep === 1 && (
+          <motion.div
+            key="step1"
+            className="auth-card p-8 bg-white bg-opacity-90 rounded-3xl shadow-2xl ring-4 ring-red-200"
+            initial={cardVariants.initial}
+            animate={cardVariants.animate}
+            exit={cardVariants.exit}
+            transition={{ duration: 0.8 }}
+          >
+            <h2 className="text-3xl font-extrabold text-red-500 mb-4 text-center drop-shadow-md">
+              I just want you to know na you're literally on my mind every single minute!
+            </h2>
+            <div className="flex justify-center items-center mb-6 gap-4">
+              <FaHeart className="text-6xl text-pink-500 animate-bounce" />
+              <GiBearFace className="text-6xl text-amber-700 animate-wiggle" />
+            </div>
+            <p className="text-lg text-gray-700 mb-6 text-center">
+              Even when I'm doing something, you're actually always on mind na sinasama ko pangalan mo sa lhat ng gnagawa ko, like literally. I'm going insane when you're not talking to me.
+              I miss you soo soo much. I want to go to you now.
+            </p>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleNext}
+              className="w-full py-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl shadow-lg"
             >
-              <MdLogin className="text-lg" />
-              Go to Login
-            </button>
-          </div>
-        </div>
-      </div>
+              Next
+            </motion.button>
+          </motion.div>
+        )}
+
+        {cardStep === 2 && (
+          <motion.div
+            key="step2"
+            className="auth-card p-8 bg-white bg-opacity-90 rounded-3xl shadow-2xl ring-4 ring-blue-200"
+            initial={cardVariants.initial}
+            animate={cardVariants.animate}
+            exit={cardVariants.exit}
+            transition={{ duration: 0.8 }}
+          >
+            <h2 className="text-3xl font-bold text-blue-500 mb-4 text-center">
+              Let's Date this Friday!
+            </h2>
+            <p className="text-lg text-gray-700 mb-8 text-center">
+              Before anything else. I want to formally invite you para sa isang date this coming Friday. I'm expecting for your lovely presence.
+            </p>
+            <div className="flex justify-around">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleSureSure}
+                className="py-2 px-4 bg-green-500 text-white rounded-xl shadow-lg"
+              >
+                Sure Sure
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05, rotate: [0, -5, 5, 0] }}
+                whileTap={{ scale: 1.1 }}
+                onClick={handleNoNo}
+                className="py-2 px-4 bg-red-500 text-white rounded-xl shadow-lg"
+              >
+                No No
+              </motion.button>
+            </div>
+          </motion.div>
+        )}
+
+        {cardStep === 3 && (
+          <motion.div
+            key="step3"
+            className="auth-card p-8 bg-white bg-opacity-90 rounded-3xl shadow-2xl ring-4 ring-purple-200"
+            initial={cardVariants.initial}
+            animate={cardVariants.animate}
+            exit={cardVariants.exit}
+            transition={{ duration: 0.8 }}
+          >
+            <h2 className="text-4xl font-extrabold text-purple-700 mb-4 text-center">
+              P.S. I Love You!
+            </h2>
+            <p className="text-lg text-gray-700 text-center">
+              I love you soo soo much, for realll. I think it's pretty obvious naman, or is it, I don't really know, but you told me that it is. 
+              Pero ayun I just want you to know na you're really important sa'kin, and I just can't afford to lose you. 
+
+              Am I gonna lose you. I hope not. I really hope not.
+
+              
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
